@@ -54,8 +54,8 @@ class GlobalMiningConfig:
 
 class GlobalMiningPipeline:
     def __init__(
-        self,
-        config: GlobalMiningConfig,
+            self,
+            config: GlobalMiningConfig,
     ):
         self.config = config
         self.launcher = hydra.utils.instantiate(config.launcher)
@@ -78,8 +78,8 @@ class GlobalMiningPipeline:
         )
 
     def _find_data_shards(
-        self,
-        lang: str,
+            self,
+            lang: str,
     ) -> tp.List[str]:
 
         if hasattr(self.config.data, "shard_glob"):
@@ -102,9 +102,9 @@ class GlobalMiningPipeline:
         return shards
 
     async def _process_lang(
-        self,
-        lang: str,
-        index_type: str,
+            self,
+            lang: str,
+            index_type: str,
     ) -> tp.Tuple[tp.List[str], tp.List[str], str]:
         """
         prepare embeddings and indexes for a single language
@@ -229,23 +229,26 @@ class GlobalMiningPipeline:
         logger.info(f"output: {os.path.abspath(self.config.output_dir)}")
         logger.info(f"working dir: {os.getcwd()}")
 
-        (
-            (src_text_shards, src_embeddings, src_merged_index),
-            (
-                tgt_text_shards,
-                tgt_embeddings,
-                tgt_merged_index,
-            ),
-        ) = await asyncio.gather(
-            self._process_lang(
-                lang=self.config.src_lang,
-                index_type=self.src_index_type,
-            ),
+
+        (target_tup) = await asyncio.gather(
             self._process_lang(
                 lang=self.config.tgt_lang,
                 index_type=self.tgt_index_type,
             ),
         )
+
+        logger.info(target_tup)
+        (tgt_text_shards,tgt_embeddings,tgt_merged_index) = target_tup[0]
+
+        src_tup = await asyncio.gather(
+            self._process_lang(
+                lang=self.config.src_lang,
+                index_type=self.src_index_type,
+            )
+        )
+
+        logger.info(src_tup)
+        (src_text_shards, src_embeddings, src_merged_index) = src_tup[0]
 
         src2tgt_calc_distances_module = StopesModule.build(
             self.config.calculate_distances,
