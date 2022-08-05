@@ -77,7 +77,7 @@ extras_require = {
         "pylint>=2.8.0",
         "flit>=3.5.1",
     ],
-    "mining": ["fairscale", "faiss-gpu", "sentencepiece", "numpy"],
+    "mining": ["faiss-gpu", "sentencepiece", "numpy"],
     "mono": [
         "xxhash",
         "fasttext",

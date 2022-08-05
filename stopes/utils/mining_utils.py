@@ -94,25 +94,29 @@ def get_cached_num_parts(
 def get_faiss_index_type(
     lang: str,
     data_cfg: DataConfig,
-) -> str:
+) -> tp.Tuple[str,int]:
     nb_sent = get_cached_line_count(data_cfg=data_cfg, lang=lang)
     if nb_sent > 500000000:
-        return "OPQ64,IVF262144,PQ64"
+        return "OPQ64,IVF262144,PQ64",13107200
+        # return "OPQ64,IVF262144,PQ64",26214400
     elif nb_sent > 100000000:
-        return "OPQ64,IVF131072,PQ64"
+        return "OPQ64,IVF131072,PQ64",6553600
+        # return "OPQ64,IVF131072,PQ64",19660800
     elif nb_sent > 10000000:
-        return "OPQ64,IVF65536,PQ64"
+        # return "OPQ64,IVF65536,PQ64",3276800
+        # return "OPQ64,IVF65536,PQ64",10000400
+        return "OPQ64,IVF65536,PQ64", 1638400
     elif nb_sent > 4000000:
-        return "OPQ64,IVF32768,PQ64"
+        return "OPQ64,IVF32768,PQ64",1638400
     elif nb_sent > 700000:
-        return "OPQ64,IVF16384,PQ64"
+        return "OPQ64,IVF16384,PQ64",600000
     elif nb_sent > 250000:
-        return "OPQ64,IVF8192,PQ64"
+        return "OPQ64,IVF8192,PQ64",245760
     elif nb_sent > 160000:
-        return "OPQ64,IVF4096,PQ64"
+        return "OPQ64,IVF4096,PQ64",122880
     elif nb_sent > 80000:
-        return "OPQ64,IVF2048,PQ64"
-    return "OPQ64,IVF1024,PQ64"
+        return "OPQ64,IVF2048,PQ64",60000
+    return "OPQ64,IVF1024,PQ64",50000
 
 
 def extract_shard_id(filename: str, default: int = 0) -> int:

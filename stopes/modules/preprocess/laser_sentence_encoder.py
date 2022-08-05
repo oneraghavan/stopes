@@ -11,6 +11,7 @@ import re
 import typing as tp
 from collections import namedtuple
 from pathlib import Path
+from tqdm import  tqdm
 
 import numpy as np
 import sentencepiece as spm
@@ -151,7 +152,7 @@ class SentenceEncoder:
     def encode_sentences(self, sentences):
         indices = []
         results = []
-        for batch, batch_indices in self._make_batches(sentences):
+        for batch, batch_indices in tqdm(self._make_batches(sentences)):
             indices.extend(batch_indices)
             results.append(self._process_batch(batch))
         return np.vstack(results)[np.argsort(indices, kind=self.sort_kind)]

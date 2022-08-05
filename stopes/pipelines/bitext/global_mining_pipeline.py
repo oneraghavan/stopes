@@ -47,6 +47,8 @@ class GlobalMiningConfig:
     populate_index: DictConfig
     merge_indexes: DictConfig
     embedding_sample: DictConfig
+    local_tmp_dir: str
+    demo_dir: str
     src_lang: str
     tgt_lang: str
     lang_configs: tp.Dict[str, LangConfig] = field(default_factory=dict)
@@ -104,7 +106,7 @@ class GlobalMiningPipeline:
     async def _process_lang(
             self,
             lang: str,
-            index_type: str,
+            index_type: tp.Tuple[str,int],
     ) -> tp.Tuple[tp.List[str], tp.List[str], str]:
         """
         prepare embeddings and indexes for a single language
@@ -173,7 +175,7 @@ class GlobalMiningPipeline:
                         output_dir=self.config.train_index.config.output_dir,
                         embedding_dimensions=self.config.train_index.config.embedding_dimensions,
                         fp16=self.config.embed_text.config.encoder.fp16_storage,
-                        sample_size=self.config.train_index.config.sample_sz,
+                        sample_size=index_type[1],
                         tmp_dir=self.config.local_tmp_dir,
                         max_num_workers=self.config.embedding_sample.max_num_workers,
                     )
@@ -183,11 +185,12 @@ class GlobalMiningPipeline:
                 index_training_sample = embedded_files[0]
             train_index_module = StopesModule.build(
                 self.config.train_index,
-                index_type=index_type,
+                index_type=index_type[0],
                 data=self.config.data,
                 embedding_file=index_training_sample,
                 lang=lang,
                 fp16_storage=self.config.embed_text.config.encoder.fp16_storage,
+                sample_sz=index_type[1]
             )
             trained_index = await self.launcher.schedule(train_index_module)
 
@@ -196,7 +199,7 @@ class GlobalMiningPipeline:
                 index=str(trained_index),
                 embedding_files=embedded_files,
                 lang=lang,
-                index_type=index_type,
+                index_type=index_type[0],
             )
             populated_indexes = await self.launcher.schedule(populate_index_module)
 
@@ -214,7 +217,7 @@ class GlobalMiningPipeline:
                 data=self.config.data,
                 indexes=sorted(populated_indexes, key=extract_shard_id),
                 lang=lang,
-                index_type=index_type,
+                index_type=index_type[0],
             )
             merged = await self.launcher.schedule(merge_indexes_module)
             return (text_shards, embedded_files, str(merged))
@@ -266,10 +269,16 @@ class GlobalMiningPipeline:
             distance_type=DistanceType.tgt2src,
             index_other_lang=src_merged_index,
         )
-        src2tgt_dist, tgt2src_dist = await asyncio.gather(
+        src2tgt_dist = await asyncio.gather(
             self.launcher.schedule(src2tgt_calc_distances_module),
+        )
+
+        tgt2src_dist = await asyncio.gather(
             self.launcher.schedule(tgt2src_calc_distances_module),
         )
+
+        src2tgt_dist = src2tgt_dist[0]
+        tgt2src_dist = tgt2src_dist[0]
 
         # each schedule returns a list of dist+index files
         # we unzip that in two separate lists for each direction (four lists)
@@ -280,7 +289,7 @@ class GlobalMiningPipeline:
 
         mine_indexes_module = StopesModule.build(
             self.config.mine_indexes,
-            index_type=self.src_index_type,
+            index_type=self.src_index_type[0],
             src2tgt_dist_files=src2tgt_dist_files,
             src2tgt_index_files=src2tgt_index_files,
             tgt2src_dist_files=tgt2src_dist_files,

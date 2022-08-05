@@ -30,7 +30,7 @@ def train_index(
     idx = faiss.index_factory(dim, idx_type)
     if gpu:
         idx = index_to_gpu(idx)
-
+        idx.verbose = True
     with emb.open_for_read(mode="memory") as data:
 
         # fp16 currently not supported by FAISS

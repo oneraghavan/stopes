@@ -15,11 +15,12 @@ tgt_lang: ???
 data: ???
 # you might want to set in a preset
 model_dir: ???
+demo_dir: /home/raghavan/projects/stopes/demo
 vocab_dir: ???
 output_dir: ???
 embedding_dimensions: 1024
 mine_threshold: 1.04
-local_tmp_dir: /scratch/slurm_tmpdir/
+local_tmp_dir: /tmp/slurm_tmpdir/
 
 embedding_sample:
   max_num_workers: 40
