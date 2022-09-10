@@ -38,7 +38,7 @@ class CalculateDistancesConfig:
     other_lang: str = MISSING  # mostly for logging
     lang_embeddings: tp.List[str] = MISSING  # list of embedding files
     distance_type: DistanceType = MISSING  # mostly for logging
-    index_other_lang: str = MISSING  # "path/to/index"
+    index_other_lang: tp.Any = MISSING  # "path/to/index"
 
     output_dir: tp.Optional[
         str
@@ -71,11 +71,12 @@ class CalculateDistancesModule(StopesModule):
         fp16 = getattr(self.config, "fp16_embeddings", False)
         self.embedding_dtype = np.float16 if fp16 else np.float32
 
-        index_size = os.path.getsize(self.config.index_other_lang) >> 30  # size in GB
+        # index_size = os.path.getsize(self.config.index_other_lang) >> 30  # size in GB
         # TODO: add gpu_memory_gb to either a preset or this module's config
-        num_gpu = math.ceil(index_size / self.config.gpu_memory_gb)
+        # num_gpu = math.ceil(index_size / self.config.gpu_memory_gb)
         # max to 8, min to 1
-        self.num_gpu = 8 if num_gpu > 8 else 1 if num_gpu < 1 else num_gpu
+        self.num_gpu = 8
+        # self.num_gpu = 8 if num_gpu > 8 else 1 if num_gpu < 1 else num_gpu
 
     def requirements(self):
         return DistributedRequirements(
@@ -98,21 +99,38 @@ class CalculateDistancesModule(StopesModule):
         iteration_index: int = 0,
     ) -> tp.Tuple[Path, Path]:
         # loading the index in memory
-        current_index = load_index(
-            self.config.index_other_lang,
-            self.config.num_probe,
-            self.config.gpu_type,
-        )
 
-        # computing distances
-        distances, indices = compute_distances(
-            iteration_value,
-            current_index,
-            self.config.embedding_dimensions,
-            self.embedding_dtype,
-            self.config.knn,
-            self.config.normalize_query_embeddings,
-        )
+        distances = indices = None
+        total_processed = 0
+        for index_path in sorted(self.config.index_other_lang):
+
+            current_index = load_index(
+                index_path,
+                self.config.num_probe,
+                self.config.gpu_type,
+            )
+
+            # computing distances
+            distances_curr, indices_curr = compute_distances(
+                iteration_value,
+                current_index,
+                self.config.embedding_dimensions,
+                self.embedding_dtype,
+                self.config.knn,
+                self.config.normalize_query_embeddings,
+            )
+
+            if distances is not None:
+                indices_curr = indices_curr + total_processed
+                joined_distances = np.hstack((distances,distances_curr))
+                joined_indices = np.hstack((indices,indices_curr))
+                top_k_indices = joined_distances.argsort(axis=1)[:, :self.config.knn]
+                distances = joined_distances[np.arange(joined_distances.shape[0])[:, None], top_k_indices]
+                indices = joined_indices[np.arange(joined_indices.shape[0])[:, None], top_k_indices]
+            else:
+                distances = distances_curr
+                indices = indices_curr
+            total_processed = total_processed + current_index.ntotal
 
         # persisting to disk
         out_base_name = (

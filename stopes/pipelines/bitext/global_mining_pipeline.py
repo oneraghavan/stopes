@@ -107,7 +107,7 @@ class GlobalMiningPipeline:
             self,
             lang: str,
             index_type: tp.Tuple[str,int],
-    ) -> tp.Tuple[tp.List[str], tp.List[str], str]:
+    ) -> tp.Tuple[tp.List[str], tp.List[str], tp.List[str]]:
         """
         prepare embeddings and indexes for a single language
         returns a tuple with the list of embedded files (the shards) and the final merged index for that lang
@@ -207,9 +207,9 @@ class GlobalMiningPipeline:
                 str(idx) for idx in populated_indexes if idx is not None
             ]
 
-            if len(populated_indexes) == 1:
-                # there is only one index to start with, let's just use that instead of merging
-                return (text_shards, embedded_files, populated_indexes[0])
+            # if len(populated_indexes) == 1:
+            #     # there is only one index to start with, let's just use that instead of merging
+            #     return (text_shards, embedded_files, populated_indexes[0])
 
             # otherwise, we need to run the merge
             merge_indexes_module = StopesModule.build(
@@ -220,7 +220,8 @@ class GlobalMiningPipeline:
                 index_type=index_type[0],
             )
             merged = await self.launcher.schedule(merge_indexes_module)
-            return (text_shards, embedded_files, str(merged))
+            # return (text_shards, embedded_files, str(merged))
+            return (text_shards, embedded_files, populated_indexes)
 
     def run(self) -> None:
         loop = asyncio.get_event_loop()
@@ -241,7 +242,7 @@ class GlobalMiningPipeline:
         )
 
         logger.info(target_tup)
-        (tgt_text_shards,tgt_embeddings,tgt_merged_index) = target_tup[0]
+        (tgt_text_shards,tgt_embeddings,tgt_indexes) = target_tup[0]
 
         src_tup = await asyncio.gather(
             self._process_lang(
@@ -251,7 +252,7 @@ class GlobalMiningPipeline:
         )
 
         logger.info(src_tup)
-        (src_text_shards, src_embeddings, src_merged_index) = src_tup[0]
+        (src_text_shards, src_embeddings, src_indexes) = src_tup[0]
 
         src2tgt_calc_distances_module = StopesModule.build(
             self.config.calculate_distances,
@@ -259,7 +260,7 @@ class GlobalMiningPipeline:
             other_lang=self.config.tgt_lang,
             lang_embeddings=src_embeddings,
             distance_type=DistanceType.src2tgt,
-            index_other_lang=tgt_merged_index,
+            index_other_lang=tgt_indexes,
         )
         tgt2src_calc_distances_module = StopesModule.build(
             self.config.calculate_distances,
@@ -267,7 +268,7 @@ class GlobalMiningPipeline:
             other_lang=self.config.src_lang,
             lang_embeddings=tgt_embeddings,
             distance_type=DistanceType.tgt2src,
-            index_other_lang=src_merged_index,
+            index_other_lang=src_indexes,
         )
         src2tgt_dist = await asyncio.gather(
             self.launcher.schedule(src2tgt_calc_distances_module),
@@ -324,7 +325,6 @@ class GlobalMiningPipeline:
         mine_sentences = await self.launcher.schedule(mine_sentences_module)
 
         logger.info(f"Mining done, output is in {mine_sentences} .")
-
 
 @hydra.main(config_path="conf", config_name="global_mining")
 def main(config: GlobalMiningConfig) -> None:

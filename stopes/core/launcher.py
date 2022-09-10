@@ -22,6 +22,7 @@ from stopes.core.jobs_registry.registry import JobsRegistry
 from stopes.core.jobs_registry.submitit_slurm_job import SubmititJob
 from stopes.core.stopes_module import DistributedRequirements, LocalOnlyRequirements
 from stopes.core.utils import sha_key
+import inspect
 
 if tp.TYPE_CHECKING:
     from stopes.core import StopesModule
@@ -299,33 +300,40 @@ class Launcher(ABC):
         module: "StopesModule",
         not_cached: tp.List[tp.Tuple[int, tp.Any]],
         value_array: tp.List[tp.Any],
-    ) -> tp.AsyncIterator[tp.Tuple[int, tp.Any]]:
+    ) -> tp.List[tp.Tuple[int, tp.Any]]:
         reqs = module.requirements()
         # it is an iterator of awaitables that we can wait for in as_completed
-        it = (
+        results = (
             [
-                module(iteration_value=val, iteration_index=idx, cache=self.cache)
+                (idx,await module(iteration_value=val, iteration_index=idx, cache=self.cache) if inspect.iscoroutinefunction(module.run) else module(iteration_value=val, iteration_index=idx, cache=self.cache))
                 for (idx, val) in not_cached
             ]  # if we are only running locally, let's just call module directly here
-            if isinstance(reqs, LocalOnlyRequirements)
-            else self.uncached_schedule_iterator(
-                module, not_cached
+            # if isinstance(reqs, LocalOnlyRequirements)
+            # else self.uncached_schedule_iterator(
+            #     module, not_cached
             )  # otherwise delegate to the real scheduler
-        )
 
-        # now await for the results of each iteration, use tqdm to show a progress bar
-        for completed_result in tqdm.asyncio.tqdm.as_completed(
-            it,
-            desc=module.name(),
-            total=len(not_cached),
-        ):
-            # we cache as they complete
-            idx, result = await completed_result
+        for (idx,result) in results:
+            self.cache.save_cache(module,result,not_cached[idx][1],not_cached[idx][0])
             if not module.validate(
-                result, iteration_value=value_array[idx], iteration_index=idx
-            ):
-                raise ValueError(f"invalid result for {module.name()}:{idx}")
-            yield (idx, result)
+                    result, iteration_value=value_array[idx], iteration_index=idx
+                ):
+                    raise ValueError(f"invalid result for {module.name()}:{idx}")
+
+        return results
+        # now await for the results of each iteration, use tqdm to show a progress bar
+        # for completed_result in tqdm.asyncio.tqdm.as_completed(
+        #     it,
+        #     desc=module.name(),
+        #     total=len(not_cached),
+        # ):
+        #     # we cache as they complete
+        #     idx, result = await completed_result
+        #     if not module.validate(
+        #         result, iteration_value=value_array[idx], iteration_index=idx
+        #     ):
+        #         raise ValueError(f"invalid result for {module.name()}:{idx}")
+        #     yield (idx, result)
 
     async def _schedule_array(
         self, module: "StopesModule", value_array: tp.List[tp.Any]
@@ -350,7 +358,8 @@ class Launcher(ABC):
         )
 
         computed = (
-            [r async for r in self._await_and_cache(module, not_cached, value_array)]
+            # [r for r in self._await_and_cache(module, not_cached, value_array)]
+            await self._await_and_cache(module,not_cached,value_array)
             if len(not_cached) > 0
             else []
         )
