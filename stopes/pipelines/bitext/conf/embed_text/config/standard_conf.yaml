@@ -11,7 +11,7 @@ encode:
     shards: ${...shards}
     line_processor: ${...encoder}
     outfile_prefix: encf
-    buffer_size: 10_000
+    buffer_size: 100_000
     requirements:
       nodes: 1
       tasks_per_node: 1

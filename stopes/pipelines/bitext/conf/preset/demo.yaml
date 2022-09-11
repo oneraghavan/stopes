@@ -68,10 +68,12 @@ lang_configs:
     encoder_model: ${model_dir}/laser3-amh.v1.pt
     spm_model: ${model_dir}/laser3-amh.v1.spm
     spm_vocab: ${model_dir}/laser3-amh.v1.cvocab
+
   fuv:
     encoder_model: ${model_dir}/laser3-fuv.v1.pt
     spm_model: ${model_dir}/laser3-fuv.v1.spm
     spm_vocab: ${model_dir}/laser3-fuv.v1.cvocab
+    cached_embeddings: '/data/stopes/embeddings/fuv/'
   hau:
     encoder_model: ${model_dir}/laser3-hau.v1.pt
     spm_model: ${default_spm}
@@ -148,3 +150,4 @@ lang_configs:
     encoder_model: ${model_dir}/laser3-zul.v1.pt
     spm_model: ${default_spm}
     spm_vocab: ${default_vocab}
+    cached_embeddings: '/data/stopes/embeddings/zul/'

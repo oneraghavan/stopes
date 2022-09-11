@@ -334,6 +334,8 @@ class LaserSentenceEncoder(EncodeToNPY):
         normalize: bool = False,
         fp16_storage: bool = False,
         cpu: bool = False,
+        # ignored
+        cached_embeddings: str = ""
     ) -> None:
         super().__init__(
             outfile_prefix=outfile_prefix,

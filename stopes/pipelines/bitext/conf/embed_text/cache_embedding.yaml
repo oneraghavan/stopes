@@ -1,0 +1,7 @@
+defaults:
+  - /embed_text/encode@_here_
+  - config/encoder: cache_encoder
+
+config:
+  encoder:
+    encoder_model: LaBSE

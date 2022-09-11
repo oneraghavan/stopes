@@ -10,3 +10,5 @@ stable_sort: False
 normalize: False
 fp16_storage: False
 cpu: False
+
+cached_embeddings: ''

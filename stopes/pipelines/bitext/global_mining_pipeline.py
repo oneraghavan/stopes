@@ -35,6 +35,7 @@ class LangConfig:
     spm_model: tp.Optional[str] = None
     spm_vocab: tp.Optional[str] = None
     encoder_model: tp.Optional[str] = None
+    cached_embeddings: tp.Optional[str] = None
 
 
 @dataclass
@@ -147,6 +148,11 @@ class GlobalMiningPipeline:
                 lang_config,
                 "spm_vocab",
                 getattr(self.config.embed_text.config.encoder, "spm_vocab", None),
+            )
+            self.config.embed_text.config.encoder.cached_embeddings = getattr(
+                lang_config,
+                "cached_embeddings",
+                getattr(self.config.embed_text.config.encoder, "cached_embeddings", None),
             )
             embed_module = StopesModule.build(
                 self.config.embed_text,

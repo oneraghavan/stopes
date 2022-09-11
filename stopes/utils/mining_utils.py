@@ -97,8 +97,10 @@ def get_faiss_index_type(
 ) -> tp.Tuple[str,int]:
     nb_sent = get_cached_line_count(data_cfg=data_cfg, lang=lang)
     if nb_sent > 500000000:
-
-        return "OPQ64,IVF262144,PQ64",50 * 262144
+        return "OPQ64,IVF4194304,PQ64",256 * 4194304
+        # return "OPQ64,IVF4194304,PQ64",150 * 4194304
+        # return "OPQ64,IVF4194304,PQ64",80 * 4194304
+        # return "OPQ64,IVF4194304,PQ64",50 * 4194304
         # return "OPQ64,IVF262144,PQ64",100 * 262144
     elif nb_sent > 100000000:
         return "OPQ64,IVF131072,PQ64",131072 * 50

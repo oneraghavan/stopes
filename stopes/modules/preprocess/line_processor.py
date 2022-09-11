@@ -80,6 +80,7 @@ class LineProcessorConfig:
     outfile_postfix: str = ""
     shards: tp.List[str] = MISSING
     buffer_size: int = 10_000
+    segment: int = 0
     requirements: DistributedRequirements = DistributedRequirements(
         nodes=1,
         tasks_per_node=1,

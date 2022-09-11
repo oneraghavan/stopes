@@ -38,7 +38,7 @@ class Embedding:
 
             elif mode == "memory":
                 emb = np.fromfile(self.file_path, dtype=self.dtype, count=-1)
-                emb.resize(len(self), self.embedding_dimensions)
+                emb.resize(len(self), self.embedding_dimensions,refcheck=False)
 
             else:
                 raise NotImplementedError(
