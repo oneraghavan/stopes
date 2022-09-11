@@ -51,7 +51,7 @@ data:
   bname: demo_wmt22
   # shard_glob tells us where to find the language files `{lang}` will be
   # replaced by the language code from src and tgt
-  shard_glob: ${.data_shard_dir}/{lang}_*.gz
+  shard_glob: ${.data_shard_dir}/*{lang}_*.gz
   # we need to know the number of lines in each file, this is computed in
   # prepare.sh and this tells the pipeline where to find the files with this
   # info
