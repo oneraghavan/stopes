@@ -47,7 +47,7 @@ class MineBitextConfig:
     knn_dist: int = 16
     src_k: int = 16
     tgt_k: int = 16
-    k_extract: int = 1
+    k_extract: int = 16
     margin: str = "ratio"
     margin_norm: str = "mean"
     num_probe: int = 128

@@ -14,7 +14,7 @@ config:
     knn_dist: 16
     src_k: 16
     tgt_k: 16
-    k_extract: 1
+    k_extract: 16
     margin: ratio
     margin_norm: mean
     num_probe: 128

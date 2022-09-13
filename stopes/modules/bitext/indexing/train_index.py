@@ -15,6 +15,7 @@ from stopes.utils.embedding_utils import Embedding
 def index_to_gpu(idx):
     co = faiss.GpuMultipleClonerOptions()
     co.useFloat16 = True
+    co.verbose = True
     idx = faiss.index_cpu_to_all_gpus(idx, co=co)
     return idx
 

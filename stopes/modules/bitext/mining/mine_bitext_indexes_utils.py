@@ -60,9 +60,9 @@ def mine(
 
     # computing margin scores
     logger.info("Calculating forward margin scores")
-    compute_margin_scores(neighbors_x2y, avg_x2y, avg_y2x)
+    compute_margin_scores(neighbors_x2y, avg_x2y, avg_y2x,k_extract)
     logger.info("Calculating backward margin scores")
-    compute_margin_scores(neighbors_y2x, avg_y2x, avg_x2y)
+    compute_margin_scores(neighbors_y2x, avg_y2x, avg_x2y,k_extract)
 
     logger.info("Starting fastmax retrieval with threshold {:f}".format(threshold))
     fastmax_neighbors = fastmax_retrieval(
@@ -181,6 +181,7 @@ def compute_margin_scores(
     neighbors: Neighbors,
     avg_x2y: np.ndarray,
     avg_y2x: np.ndarray,
+    k_extract: int
 ):
     # the dists array is modified in place
     scores = avg_x2y.reshape(-1, 1) + avg_y2x[neighbors.indices]
@@ -189,7 +190,7 @@ def compute_margin_scores(
 
     # TODO: for efficiency, move the view filter earlier
     # i.e. (dist / (scores / 2))[:, :1] -> dist[:, :1] / (scores / 2)
-    neighbors.dists = neighbors.dists[:, :1]
+    neighbors.dists = neighbors.dists[:, :k_extract]
 
 
 def fastmax_retrieval(

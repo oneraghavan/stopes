@@ -79,7 +79,7 @@ class LineProcessorConfig:
     outfile_prefix: str = "embed"
     outfile_postfix: str = ""
     shards: tp.List[str] = MISSING
-    buffer_size: int = 10_000
+    buffer_size: int = 100_000
     segment: int = 0
     requirements: DistributedRequirements = DistributedRequirements(
         nodes=1,
